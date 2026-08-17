@@ -22,7 +22,11 @@ draws in the same fixed order every call, so running it once with
 use_inventory_skew=True and once with False on the *same* seed reuses
 identical order-arrival draws in both runs. Any difference between the two
 resulting P&L/inventory distributions is then attributable to the quoting
-policy itself, not to one run happening to get luckier order flow.
+policy itself, not to one run happening to get luckier order flow. The
+same discipline holds for the two optional realism knobs (adverse
+selection, inventory caps -- see simulate()'s docstring): draws are made
+unconditionally in a fixed order, so toggling either knob changes only
+the policy/market being simulated, never the randomness it faces.
 """
 
 import numpy as np
@@ -33,20 +37,44 @@ from . import avellaneda_stoikov, naive
 def simulate(
     midprice_paths: np.ndarray, dt: float, T: float, gamma: float, sigma: float,
     k: float, A: float, use_inventory_skew: bool, seed: int,
+    adverse_selection: float = 0.0, max_inventory: float | None = None,
 ) -> dict:
+    """Simulate a quoting policy against Poisson order flow.
+
+    adverse_selection: permanent price impact, in price units, applied to
+        the midprice *after* each fill, in the direction the counterparty
+        traded -- a bid fill (someone sold to us) pushes the mid down, an
+        ask fill pushes it up. This is the standard stylized model of
+        informed flow: the very fact that someone traded with a resting
+        quote is (partial) evidence the price is about to move through it.
+        0.0 (default) reproduces the pure-noise-flow model exactly -- the
+        impact term is identically zero, so results are bit-for-bit
+        identical to the pre-adverse-selection simulator on the same seed.
+
+    max_inventory: hard position cap. A side is simply not quoted (fill
+        probability forced to 0) whenever filling it would breach the cap
+        -- the standard risk-limit implementation: pull the quote, don't
+        "quote wide and hope." None (default) = uncapped. The RNG draws
+        are made unconditionally either way, so capped and uncapped runs
+        on the same seed still see identical order-flow randomness
+        (common random numbers preserved).
+    """
     n_sims, n_plus1 = midprice_paths.shape
     n_steps = n_plus1 - 1
     rng = np.random.default_rng(seed)
 
     inventory = np.zeros(n_sims)
     cash = np.zeros(n_sims)
+    impact = np.zeros(n_sims)  # cumulative permanent impact of our own fills
     inventory_path = np.zeros((n_sims, n_plus1))
     cash_path = np.zeros((n_sims, n_plus1))
+    effective_mid = midprice_paths.copy()
     clip_binding_count = 0
 
     for step in range(n_steps):
         time_remaining = T - step * dt
-        mid = midprice_paths[:, step]
+        mid = midprice_paths[:, step] + impact
+        effective_mid[:, step] = mid
 
         if use_inventory_skew:
             bid, ask = avellaneda_stoikov.quotes(mid, inventory, gamma, sigma, time_remaining, k)
@@ -63,19 +91,26 @@ def simulate(
         p_bid = np.clip(p_bid, 0.0, 1.0)
         p_ask = np.clip(p_ask, 0.0, 1.0)
 
+        if max_inventory is not None:
+            p_bid = np.where(inventory >= max_inventory, 0.0, p_bid)
+            p_ask = np.where(inventory <= -max_inventory, 0.0, p_ask)
+
         bid_hit = rng.random(n_sims) < p_bid
         ask_hit = rng.random(n_sims) < p_ask
 
         inventory = inventory + bid_hit - ask_hit
         cash = cash - bid * bid_hit + ask * ask_hit
+        if adverse_selection != 0.0:
+            impact = impact + adverse_selection * (ask_hit.astype(float) - bid_hit.astype(float))
 
         inventory_path[:, step + 1] = inventory
         cash_path[:, step + 1] = cash
 
-    pnl_path = cash_path + inventory_path * midprice_paths
+    effective_mid[:, n_steps] = midprice_paths[:, n_steps] + impact
+    pnl_path = cash_path + inventory_path * effective_mid
 
     return {
-        "midprice": midprice_paths,
+        "midprice": effective_mid,
         "inventory": inventory_path,
         "cash": cash_path,
         "pnl": pnl_path,

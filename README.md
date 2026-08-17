@@ -1,5 +1,7 @@
 # Market Making Simulator (Avellaneda-Stoikov)
 
+[![CI](https://github.com/Seb-L-P/market-maker-quant/actions/workflows/ci.yml/badge.svg)](https://github.com/Seb-L-P/market-maker-quant/actions/workflows/ci.yml)
+
 An implementation of Avellaneda & Stoikov's (2008) optimal market-making model — a risk-averse market maker continuously quoting bid/ask prices around a random-walk midprice, skewing quotes against current inventory to keep risk under control — benchmarked against a spread-matched naive baseline across tens of thousands of simulated trading days.
 
 Third in a series alongside a Monte Carlo blackjack/Kelly-sizing project and an options pricing & Greeks engine. Where those were "does my simulation match a known number," this one is closer to "does a closed-form optimal *policy* actually outperform a naive one, and by how much" — a genuine stochastic control result, not just a pricing formula.
@@ -55,6 +57,21 @@ Mean P&L and inventory both decrease monotonically as γ increases — no surpri
 
 Pure formula sanity check, no simulation involved: quoted spread should widen as volatility rises (more inventory risk per unit time → charge more to bear it), and it does, roughly quadratically — consistent with the `γσ²(T−t)` term in the optimal-spread formula.
 
+### Adverse selection: informed flow flips the ranking
+
+The baseline model's order flow is pure noise — a fill is a random gift. Real flow isn't: the fact that someone traded into a resting quote is itself (partial) evidence the price is about to move through it. The simulator models this with a permanent-impact parameter ξ: every bid fill pushes the midprice down by ξ, every ask fill pushes it up — the standard stylized model of informed flow (`adverse_selection` in `simulator.py`, still bit-for-bit identical to the baseline at ξ=0, verified by test).
+
+| ξ (impact/fill) | AS mean P&L | AS Sharpe-like | Naive mean P&L | Naive Sharpe-like |
+|---:|---:|---:|---:|---:|
+| 0.00 | 64.86 | 9.93 | **67.92** | 5.07 |
+| 0.05 | 62.75 | 9.76 | 64.38 | 4.75 |
+| 0.10 | 60.65 | 9.55 | 60.84 | 4.30 |
+| 0.20 | **56.43** | 9.04 | 53.77 | 3.26 |
+
+The finding worth stating carefully: **with pure noise flow, the naive symmetric quoter actually earns *more* mean P&L** (67.9 vs. 64.9 — the AS policy sacrifices some spread capture whenever its skewed quotes sit further from the mid on one side) — it just does so at double the P&L volatility. **As flow gets more informed, the ranking flips even on raw mean P&L** (crossover near ξ≈0.1; by ξ=0.2 AS earns more in absolute terms, 56.4 vs. 53.8), and the Sharpe-like gap widens from 2x to 2.8x. The mechanism: adverse selection is a tax per unit of inventory held against an informed move, and the AS policy's inventory-skew recycles positions faster, so it simply has less inventory sitting in the way when the price moves through it. Inventory control turns out to be a partial hedge against toxicity, not just against random inventory risk — which is precisely why real market makers treat inventory skew as non-negotiable even when it costs spread capture in calm conditions. Full sweep in `results/adverse_selection_sweep.csv`.
+
+The simulator also supports a hard position cap (`max_inventory`) — the standard risk-limit implementation: the side whose fill would breach the cap is simply not quoted, rather than "quoted wide and hoped about." Both knobs preserve the common-random-numbers discipline (RNG draws are made unconditionally in a fixed order), so any run with either enabled remains directly comparable against the baseline on the same seed.
+
 ## Methodology
 
 **Midprice (`market.py`).** Arithmetic Brownian motion, `dS_t = σ dW_t`, no drift — the model in the AS paper, not a simplification of it. The reservation-price and optimal-spread formulas below are derived (via HJB) specifically for *additive*, not multiplicative, volatility; swapping in GBM would mean re-deriving the closed form, not just changing the simulator. Fully vectorized: one `cumsum` of increments produces all simulated trading days' midprice paths at once, no time loop at all (the same pattern used for GBM path simulation in the options-pricing project's LSM module).
@@ -80,7 +97,8 @@ The probability-clipping fallback (`p_bid`/`p_ask` clipped to `[0,1]`, needed be
 - **Reduced-form order arrivals, not a reconstructed limit order book.** This is deliberate, not a shortcut — it's the model in the original paper. A full LOB simulator (resting orders from other participants, price-time priority, realistic order-flow dynamics) would be a substantially larger, different project; see Extensions.
 - **Symmetric spread split** (`δ_a = δ_b`) around the reservation price, as in the paper's own presentation, rather than the fully general asymmetric solution.
 - **Fixed γ, k, A, σ for the whole trading day** — no regime changes, no intraday seasonality in order flow (real markets are busier at the open/close), no adverse-selection-driven widening around news events.
-- **Inventory is unbounded** — no hard position limits are enforced (the AS policy discourages large inventory but doesn't forbid it), and no capital/margin constraint is modeled.
+- **Inventory is unbounded by default** — the AS policy discourages large inventory but doesn't forbid it. A hard cap is available (`max_inventory`) and tested, but the headline comparison runs uncapped to match the paper; no capital/margin constraint is modeled either way.
+- **Adverse selection is stylized** — a constant permanent impact per fill, not a model of *which* fills are informed (no order-size information, no clustering of toxicity, no spread-widening response by the quoting policy). Enough to show the qualitative effect honestly; a toxicity-aware policy is an extension, not a given.
 - **Mark-to-market P&L** values terminal inventory at the final simulated midprice; it doesn't model the cost of actually unwinding a residual position (crossing the spread to flatten at day's end).
 
 ## Project structure

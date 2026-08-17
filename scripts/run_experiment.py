@@ -92,6 +92,21 @@ def main():
     )
     print(frontier_df[["gamma", "mean_pnl", "std_pnl", "sharpe_like", "mean_abs_inventory_over_time"]].to_string(index=False))
 
+    # --- Adverse selection sweep: what informed flow does to both policies ---
+    print("\nSweeping adverse selection (permanent impact per fill, price units)...")
+    xi_grid = [0.0, 0.02, 0.05, 0.1, 0.2]
+    adverse_rows = []
+    for xi in xi_grid:
+        for label, skew in (("avellaneda_stoikov", True), ("naive_symmetric", False)):
+            r = simulate(midprice_paths, use_inventory_skew=skew, adverse_selection=xi, **common)
+            s = summarize(r)
+            adverse_rows.append({"adverse_selection": xi, "policy": label,
+                                 "mean_pnl": s["mean_pnl"], "std_pnl": s["std_pnl"],
+                                 "sharpe_like": s["sharpe_like"]})
+    adverse_df = pd.DataFrame(adverse_rows)
+    adverse_df.to_csv(os.path.join(args.outdir, "adverse_selection_sweep.csv"), index=False)
+    print(adverse_df.to_string(index=False))
+
     # --- Volatility sensitivity (pure formula check, no simulation needed) ---
     sigma_grid = np.linspace(0.5, 4.0, 15)
     spreads = [2 * optimal_half_spread(gamma=args.gamma, sigma=s, time_remaining=args.T, k=args.k) for s in sigma_grid]
@@ -106,6 +121,7 @@ def main():
         "inventory_std_reduction_pct": 100 * (1 - as_stats["std_terminal_inventory"] / naive_stats["std_terminal_inventory"]),
         "sharpe_like_improvement_pct": 100 * (as_stats["sharpe_like"] / naive_stats["sharpe_like"] - 1),
         "gamma_sweep": frontier_rows,
+        "adverse_selection_sweep": adverse_rows,
     }
     with open(os.path.join(args.outdir, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2)

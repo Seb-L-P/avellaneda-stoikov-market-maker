@@ -50,3 +50,42 @@ def test_higher_risk_aversion_reduces_inventory_variance():
     low_gamma_std = low_gamma["inventory"][:, -1].std(ddof=1)
     high_gamma_std = high_gamma["inventory"][:, -1].std(ddof=1)
     assert high_gamma_std < low_gamma_std
+
+
+def test_zero_adverse_selection_reproduces_baseline_exactly():
+    # The realism knobs must be pay-for-what-you-use: xi=0 has to be
+    # bit-for-bit identical to not passing the parameter at all.
+    n_sims = 2_000
+    midprice_paths = simulate_midprice(n_sims, n_steps=200, dt=PARAMS["dt"], s0=100.0, sigma=PARAMS["sigma"], seed=11)
+    base = simulate(midprice_paths, use_inventory_skew=True, seed=11, **PARAMS)
+    with_zero = simulate(midprice_paths, use_inventory_skew=True, seed=11, adverse_selection=0.0, **PARAMS)
+    assert np.array_equal(base["pnl"], with_zero["pnl"])
+    assert np.array_equal(base["inventory"], with_zero["inventory"])
+
+
+def test_adverse_selection_costs_money():
+    # Informed flow should strictly reduce mean P&L on the same seed: every
+    # fill now carries a little bad news, and nothing else changed.
+    n_sims = 20_000
+    midprice_paths = simulate_midprice(n_sims, n_steps=200, dt=PARAMS["dt"], s0=100.0, sigma=PARAMS["sigma"], seed=13)
+    clean = simulate(midprice_paths, use_inventory_skew=True, seed=13, **PARAMS)
+    toxic = simulate(midprice_paths, use_inventory_skew=True, seed=13, adverse_selection=0.05, **PARAMS)
+    assert toxic["pnl"][:, -1].mean() < clean["pnl"][:, -1].mean()
+
+
+def test_adverse_selection_pnl_accounting_stays_consistent():
+    midprice_paths = simulate_midprice(500, n_steps=200, dt=PARAMS["dt"], s0=100.0, sigma=PARAMS["sigma"], seed=17)
+    result = simulate(midprice_paths, use_inventory_skew=True, seed=17, adverse_selection=0.05, **PARAMS)
+    reconstructed = result["cash"] + result["inventory"] * result["midprice"]
+    assert np.allclose(reconstructed, result["pnl"])
+
+
+def test_inventory_cap_is_never_breached():
+    n_sims = 5_000
+    cap = 3
+    midprice_paths = simulate_midprice(n_sims, n_steps=200, dt=PARAMS["dt"], s0=100.0, sigma=PARAMS["sigma"], seed=19)
+    result = simulate(midprice_paths, use_inventory_skew=True, seed=19, max_inventory=cap, **PARAMS)
+    assert np.max(np.abs(result["inventory"])) <= cap
+    # The cap must actually bind for this test to mean anything.
+    uncapped = simulate(midprice_paths, use_inventory_skew=True, seed=19, **PARAMS)
+    assert np.max(np.abs(uncapped["inventory"])) > cap
