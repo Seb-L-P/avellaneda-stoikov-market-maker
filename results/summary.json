@@ -1,0 +1,137 @@
+{
+  "params": {
+    "T": 1.0,
+    "dt": 0.005,
+    "n_steps": 200,
+    "n_sims": 50000,
+    "s0": 100.0,
+    "sigma": 2.0,
+    "gamma": 0.1,
+    "k": 1.5,
+    "A": 140.0
+  },
+  "avellaneda_stoikov": {
+    "mean_pnl": 64.85667940945122,
+    "std_pnl": 6.533038321912479,
+    "sharpe_like": 9.927491040717651,
+    "mean_terminal_inventory": 0.00778,
+    "std_terminal_inventory": 2.920097602992102,
+    "mean_abs_inventory_over_time": 0.9803922388059702,
+    "mean_max_abs_inventory": 3.98222,
+    "clip_binding_frac": 8.42e-05
+  },
+  "naive_symmetric": {
+    "mean_pnl": 67.91656524451778,
+    "std_pnl": 13.397519543264343,
+    "sharpe_like": 5.069338770150413,
+    "mean_terminal_inventory": -0.03278,
+    "std_terminal_inventory": 8.423296534616966,
+    "mean_abs_inventory_over_time": 4.365139502487562,
+    "mean_max_abs_inventory": 10.06052,
+    "clip_binding_frac": 0.0
+  },
+  "pnl_std_reduction_pct": 51.23695620808413,
+  "inventory_std_reduction_pct": 65.3330784332302,
+  "sharpe_like_improvement_pct": 95.83404248248912,
+  "gamma_sweep": [
+    {
+      "gamma": 0.01,
+      "mean_pnl": 68.3457186127078,
+      "std_pnl": 8.996251675064686,
+      "sharpe_like": 7.597132792776873,
+      "mean_terminal_inventory": -0.01368,
+      "std_terminal_inventory": 5.215468999039071,
+      "mean_abs_inventory_over_time": 2.5761130348258705,
+      "mean_max_abs_inventory": 7.16968,
+      "clip_binding_frac": 0.0
+    },
+    {
+      "gamma": 0.02,
+      "mean_pnl": 67.98970001568276,
+      "std_pnl": 7.905043720621111,
+      "sharpe_like": 8.60079999789561,
+      "mean_terminal_inventory": -0.01004,
+      "std_terminal_inventory": 4.378347016495145,
+      "mean_abs_inventory_over_time": 1.9803940298507463,
+      "mean_max_abs_inventory": 6.08392,
+      "clip_binding_frac": 0.0
+    },
+    {
+      "gamma": 0.05,
+      "mean_pnl": 66.8421424619544,
+      "std_pnl": 6.957208568916232,
+      "sharpe_like": 9.607609402511677,
+      "mean_terminal_inventory": 0.00148,
+      "std_terminal_inventory": 3.4752150080228184,
+      "mean_abs_inventory_over_time": 1.346101592039801,
+      "mean_max_abs_inventory": 4.79632,
+      "clip_binding_frac": 1e-07
+    },
+    {
+      "gamma": 0.1,
+      "mean_pnl": 64.85667940945122,
+      "std_pnl": 6.533038321912479,
+      "sharpe_like": 9.927491040717651,
+      "mean_terminal_inventory": 0.00778,
+      "std_terminal_inventory": 2.920097602992102,
+      "mean_abs_inventory_over_time": 0.9803922388059702,
+      "mean_max_abs_inventory": 3.98222,
+      "clip_binding_frac": 8.42e-05
+    },
+    {
+      "gamma": 0.2,
+      "mean_pnl": 60.797066770402395,
+      "std_pnl": 6.263771325615626,
+      "sharpe_like": 9.706144048039148,
+      "mean_terminal_inventory": 0.01146,
+      "std_terminal_inventory": 2.450642524191488,
+      "mean_abs_inventory_over_time": 0.692696815920398,
+      "mean_max_abs_inventory": 3.28372,
+      "clip_binding_frac": 0.0018183
+    },
+    {
+      "gamma": 0.3,
+      "mean_pnl": 56.768897409053054,
+      "std_pnl": 6.13293039804919,
+      "sharpe_like": 9.256406599218955,
+      "mean_terminal_inventory": 0.01642,
+      "std_terminal_inventory": 2.215267146817881,
+      "mean_abs_inventory_over_time": 0.5484565174129353,
+      "mean_max_abs_inventory": 2.9377,
+      "clip_binding_frac": 0.00192945
+    },
+    {
+      "gamma": 0.5,
+      "mean_pnl": 48.51067107598517,
+      "std_pnl": 5.8675103613699315,
+      "sharpe_like": 8.267675400347997,
+      "mean_terminal_inventory": 0.01604,
+      "std_terminal_inventory": 1.9511788386452962,
+      "mean_abs_inventory_over_time": 0.3805654726368159,
+      "mean_max_abs_inventory": 2.56422,
+      "clip_binding_frac": 0.0126865
+    },
+    {
+      "gamma": 0.8,
+      "mean_pnl": 37.25229862094169,
+      "std_pnl": 5.243088154225133,
+      "sharpe_like": 7.105029998574788,
+      "mean_terminal_inventory": 0.01678,
+      "std_terminal_inventory": 1.731495998600015,
+      "mean_abs_inventory_over_time": 0.2621255721393035,
+      "mean_max_abs_inventory": 2.25998,
+      "clip_binding_frac": 0.0251346
+    },
+    {
+      "gamma": 1.2,
+      "mean_pnl": 26.859536017523688,
+      "std_pnl": 4.426180029550442,
+      "sharpe_like": 6.068333379618939,
+      "mean_terminal_inventory": 0.00986,
+      "std_terminal_inventory": 1.5608624238638473,
+      "mean_abs_inventory_over_time": 0.18335572139303483,
+      "mean_max_abs_inventory": 2.00242,
+      "clip_binding_frac": 0.024671
+    }
+  ]
+}
