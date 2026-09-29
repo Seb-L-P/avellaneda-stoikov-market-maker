@@ -4,14 +4,7 @@
 
 An implementation of Avellaneda & Stoikov's (2008) optimal market-making model — a risk-averse market maker continuously quoting bid/ask prices around a random-walk midprice, skewing quotes against current inventory to keep risk under control — benchmarked against a spread-matched naive baseline across tens of thousands of simulated trading days.
 
-Third in a series alongside a Monte Carlo blackjack/Kelly-sizing project and an options pricing & Greeks engine. Where those were "does my simulation match a known number," this one is closer to "does a closed-form optimal *policy* actually outperform a naive one, and by how much" — a genuine stochastic control result, not just a pricing formula.
-
-## CV bullet
-
-> **Market Making Simulator (Avellaneda-Stoikov) — Python · [GitHub]**
-> - Implemented the Avellaneda-Stoikov (2008) optimal market-making model (closed-form inventory-skewed quoting under Poisson order arrivals) with a fully vectorized order-arrival simulation engine, running 50,000 parallel simulated trading days per experiment
-> - Built a spread-matched naive baseline (identical quote width, no inventory skew) to isolate the value of inventory-aware quoting specifically, using common random numbers so both strategies face identical order flow
-> - Result: inventory-skewed quoting cut P&L standard deviation by 51% and terminal inventory standard deviation by 65% for comparable mean P&L (~5% apart), nearly doubling the Sharpe-like ratio (9.9 vs. 5.1); a risk-aversion sweep revealed a non-monotonic risk/return tradeoff with an interior-optimal γ — more risk aversion isn't always better, even for risk-adjusted return
+The question is not "does my simulation reproduce a known number" but "does a closed-form optimal policy actually outperform a naive one, and by how much" — a stochastic control result rather than a pricing formula, which means the answer has to be measured rather than derived.
 
 ## Results
 
