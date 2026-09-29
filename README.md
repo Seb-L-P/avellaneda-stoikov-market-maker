@@ -1,6 +1,6 @@
 # Market Making Simulator (Avellaneda-Stoikov)
 
-[![CI](https://github.com/Seb-L-P/market-maker-quant/actions/workflows/ci.yml/badge.svg)](https://github.com/Seb-L-P/market-maker-quant/actions/workflows/ci.yml)
+[![CI](https://github.com/Seb-L-P/avellaneda-stoikov-market-maker/actions/workflows/ci.yml/badge.svg)](https://github.com/Seb-L-P/avellaneda-stoikov-market-maker/actions/workflows/ci.yml)
 
 An implementation of Avellaneda & Stoikov's (2008) optimal market-making model — a risk-averse market maker continuously quoting bid/ask prices around a random-walk midprice, skewing quotes against current inventory to keep risk under control — benchmarked against a spread-matched naive baseline across tens of thousands of simulated trading days.
 
